@@ -108,6 +108,7 @@ class Outbox(object):
 
         smtp = self._login()
         smtp.sendmail(self.username, email.recipients, msg.as_string())
+        smtp.quit()
 
 def add_attachment(message, attachment):
     '''Attach an attachment to a message as a side effect.
