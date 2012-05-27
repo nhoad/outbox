@@ -52,17 +52,23 @@ class Attachment(object):
             return f.read()
 
 class Outbox(object):
-    def __init__(self, username, password, server, port, use_tls=True):
+    def __init__(self, username, password, server, port, mode='TLS'):
         self.username = username
         self.password = password
-        self.connection_details = (server, port, use_tls)
+        self.connection_details = (server, port, mode)
 
     def _login(self):
-        server, port, secure = self.connection_details
+        server, port, mode = self.connection_details
 
-        smtp = smtplib.SMTP(server, port)
+        if mode not in ('SSL', 'TLS', None):
+            raise ValueError("Mode must be one of TLS, SSL, or None")
 
-        if secure:
+        if mode == 'SSL':
+            smtp = smtplib.SMTP_SSL(server, port)
+        else:
+            smtp = smtplib.SMTP(server, port)
+
+        if mode == 'TLS':
             smtp.starttls()
 
         smtp.login(self.username, self.password)

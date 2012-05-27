@@ -73,8 +73,7 @@ def test_outbox_attributes():
 
     assert o.username == 'username'
     assert o.password == 'password'
-    assert o.connection_details == ('server', 1234, True)
-
+    assert o.connection_details == ('server', 1234, 'TLS')
 
 def test_outbox_login():
     m = mox.Mox()
