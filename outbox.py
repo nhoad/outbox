@@ -14,7 +14,7 @@ from email.mime.text import MIMEText
 from email.utils import formatdate
 
 class Email(object):
-    def __init__(self, recipients, subject, body):
+    def __init__(self, recipients, subject, body, type='text'):
         if not recipients:
             raise ValueError("At least one recipient must be specified!")
 
@@ -27,6 +27,7 @@ class Email(object):
         self.recipients = recipients
         self.subject = subject
         self.body = body
+        self.type = type
 
 
 class Attachment(object):
@@ -95,7 +96,7 @@ class Outbox(object):
         msg['Date'] = formatdate(localtime=True)
         msg['Subject'] = email.subject
 
-        msg.attach(MIMEText(email.body))
+        msg.attach(MIMEText(email.body, email.type))
 
         for f in attachments:
             if not isinstance(f, Attachment):
