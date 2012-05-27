@@ -1,7 +1,7 @@
 '''
 File: outbox.py
 Author: Nathan Hoad
-Description: Simple wrapper around smtplib for sending an email
+Description: Simple wrapper around smtplib for sending an email.
 '''
 
 import os
@@ -30,6 +30,8 @@ class Email(object):
 
 
 class Attachment(object):
+    '''Attachment for an email'''
+
     def __init__(self, name, filepath=None, raw=None):
         if filepath and raw:
             raise ValueError("filepath and raw can't both be set.")
@@ -52,12 +54,18 @@ class Attachment(object):
             return f.read()
 
 class Outbox(object):
+    '''Thin wrapper around smtplib.(SMTP|SMTP_SSL)'''
+
     def __init__(self, username, password, server, port, mode='TLS'):
         self.username = username
         self.password = password
         self.connection_details = (server, port, mode)
 
     def _login(self):
+        '''Login to the SMTP server specified at instantiation'
+
+        Returns an authenticated SMTP instance.
+        '''
         server, port, mode = self.connection_details
 
         if mode not in ('SSL', 'TLS', None):
@@ -75,6 +83,12 @@ class Outbox(object):
         return smtp
 
     def send(self, email, attachments=()):
+        '''Send an email.
+
+        Arguments:
+            email: Email instance to send.
+            attachments: iterable containing Attachment instances
+        '''
         msg = MIMEMultipart()
         msg['From'] = self.username
         msg['To'] = ', '.join(email.recipients)
@@ -92,10 +106,17 @@ class Outbox(object):
         smtp.sendmail(self.username, email.recipients, msg.as_string())
 
 def add_attachment(message, attachment):
+    '''Attach an attachment to a message as a side effect.
+
+    Arguments:
+        message: MIMEMultipart instance.
+        attachment: Attachment instance.
+    '''
     data = attachment.read()
     part = MIMEBase('application', 'octet-stream')
     part.set_payload(data)
     encoders.encode_base64(part)
-    part.add_header('Content-Disposition', 'attachment; filename="{}"'.format(os.path.basename(attachment.name)))
+    part.add_header('Content-Disposition', 'attachment; filename="{}"'.
+            format(attachment.name))
 
     message.attach(part)
