@@ -1,5 +1,5 @@
 Outbox.py: SMTP Client for Humans
-================================
+=================================
 
 This is simplest SMTP client you'll ever see. It's 100% synchronous...
 
