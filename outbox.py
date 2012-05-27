@@ -95,7 +95,7 @@ class Outbox(object):
         '''
         msg = MIMEMultipart()
         msg['From'] = self.username
-        msg['To'] = email.recipients
+        msg['To'] = ', '.join(email.recipients)
         msg['Date'] = formatdate(localtime=True)
         msg['Subject'] = email.subject
 
@@ -116,11 +116,12 @@ def add_attachment(message, attachment):
         message: MIMEMultipart instance.
         attachment: Attachment instance.
     '''
-    data = attachment.read()
+    data = attachment.read().encode('ascii')
+
+    print(data)
     part = MIMEBase('application', 'octet-stream')
     part.set_payload(data)
     encoders.encode_base64(part)
-    part.add_header('Content-Disposition', 'attachment; filename="{}"'.
-            format(attachment.name))
+    part.add_header('Content-Disposition', 'attachment', filename=attachment.name)
 
     message.attach(part)
