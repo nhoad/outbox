@@ -6,12 +6,15 @@ Description: Simple wrapper around smtplib for sending an email.
 
 import os
 import smtplib
+import sys
 
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
+
+string_type = basestring if sys.version_info[0] == 2 else str
 
 class Email(object):
     def __init__(self, recipients, subject, body, type='text'):
@@ -21,7 +24,7 @@ class Email(object):
         iter(recipients)
 
         for r in recipients:
-            if not isinstance(r, basestring):
+            if not isinstance(r, string_type):
                 raise TypeError("Recipient not a string: %s" % r)
 
         self.recipients = recipients
@@ -92,7 +95,7 @@ class Outbox(object):
         '''
         msg = MIMEMultipart()
         msg['From'] = self.username
-        msg['To'] = ', '.join(email.recipients)
+        msg['To'] = email.recipients
         msg['Date'] = formatdate(localtime=True)
         msg['Subject'] = email.subject
 
