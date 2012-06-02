@@ -17,7 +17,7 @@ from email.utils import formatdate
 string_type = basestring if sys.version_info[0] == 2 else str
 
 class Email(object):
-    def __init__(self, recipients, subject, body, type='text'):
+    def __init__(self, recipients, subject, body=None, html_body=None):
         if not recipients:
             raise ValueError("At least one recipient must be specified!")
 
@@ -27,10 +27,13 @@ class Email(object):
             if not isinstance(r, string_type):
                 raise TypeError("Recipient not a string: %s" % r)
 
+        if body is None and html_body is None:
+            raise ValueError("No body set")
+
         self.recipients = recipients
         self.subject = subject
         self.body = body
-        self.type = type
+        self.html_body = html_body
 
 
 class Attachment(object):
@@ -61,9 +64,20 @@ class Outbox(object):
     '''Thin wrapper around smtplib.(SMTP|SMTP_SSL)'''
 
     def __init__(self, username, password, server, port, mode='TLS'):
+        if mode not in ('SSL', 'TLS', None):
+            raise ValueError("Mode must be one of TLS, SSL, or None")
+
         self.username = username
         self.password = password
         self.connection_details = (server, port, mode)
+        self._conn = None
+
+    def __enter__(self):
+        self._conn = self._login()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self._conn.quit()
 
     def _login(self):
         '''Login to the SMTP server specified at instantiation'
@@ -71,9 +85,6 @@ class Outbox(object):
         Returns an authenticated SMTP instance.
         '''
         server, port, mode = self.connection_details
-
-        if mode not in ('SSL', 'TLS', None):
-            raise ValueError("Mode must be one of TLS, SSL, or None")
 
         if mode == 'SSL':
             smtp = smtplib.SMTP_SSL(server, port)
@@ -93,22 +104,29 @@ class Outbox(object):
             email: Email instance to send.
             attachments: iterable containing Attachment instances
         '''
-        msg = MIMEMultipart()
+        msg = MIMEMultipart('alternative')
         msg['From'] = self.username
         msg['To'] = ', '.join(email.recipients)
         msg['Date'] = formatdate(localtime=True)
         msg['Subject'] = email.subject
 
-        msg.attach(MIMEText(email.body, email.type))
+        if email.body:
+            msg.attach(MIMEText(email.body, 'plain'))
+
+        if email.html_body:
+            msg.attach(MIMEText(email.html_body, 'html'))
 
         for f in attachments:
             if not isinstance(f, Attachment):
                 raise TypeError("attachment must be of type Attachment")
             add_attachment(msg, f)
 
-        smtp = self._login()
-        smtp.sendmail(self.username, email.recipients, msg.as_string())
-        smtp.quit()
+        if self._conn:
+            self._conn.sendmail(self.username, email.recipients, msg.as_string())
+        else:
+            smtp = self._login()
+            smtp.sendmail(self.username, email.recipients, msg.as_string())
+            smtp.quit()
 
 def add_attachment(message, attachment):
     '''Attach an attachment to a message as a side effect.
@@ -119,7 +137,6 @@ def add_attachment(message, attachment):
     '''
     data = attachment.read().encode('ascii')
 
-    print(data)
     part = MIMEBase('application', 'octet-stream')
     part.set_payload(data)
     encoders.encode_base64(part)
