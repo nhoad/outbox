@@ -4,44 +4,26 @@ import mox
 
 from outbox import Outbox, Attachment, Email
 
+from StringIO import StringIO
+
 def test_attachment_raw_data():
-    attachment = Attachment('my filename', raw='this is some data')
+    attachment = Attachment('my filename', fileobj=StringIO('this is some data'))
 
     assert attachment.name == 'my filename'
     assert attachment.raw == 'this is some data'
-    assert attachment.filepath == None
 
 def test_attachment_file():
-    attachment = Attachment('my filename', filepath=__file__)
+    attachment = Attachment('my filename', fileobj=open(__file__, 'rb'))
 
     assert attachment.name == 'my filename'
-    assert attachment.raw == None
-    assert attachment.filepath == __file__
-    assert attachment.read() == open(__file__).read()
+    assert attachment.raw == open(__file__, 'rb').read()
+    assert attachment.read() == open(__file__, 'rb').read()
 
-    attachment = Attachment('my filename', raw='foo data')
+    attachment = Attachment('my filename', fileobj=StringIO('foo data'))
 
     assert attachment.name == 'my filename'
     assert attachment.raw == 'foo data'
-    assert attachment.filepath == None
     assert attachment.read() == 'foo data'
-
-def test_attachment_errors():
-    test_args = [
-        dict(),
-        dict(raw=None),
-        dict(filepath='asdfasdf'),
-        dict(filepath=''),
-        dict(filepath='foo', raw='foo'),
-    ]
-
-    for f in test_args:
-        try:
-            Attachment('my filename', **f)
-        except (ValueError, OSError):
-            pass
-        else:
-            assert False, "Broken on args %r" % f
 
 def test_email_errors_recipients():
     test_args = [
@@ -131,7 +113,7 @@ def test_outbox_send():
     m.ReplayAll()
 
     o = Outbox('username', 'password', 'server', 1234)
-    o.send(message, [Attachment('foo', raw='foo')])
+    o.send(message, [Attachment('foo', fileobj=StringIO('foo'))])
 
     m.VerifyAll()
     m.UnsetStubs()
@@ -157,7 +139,7 @@ def test_outbox_context():
     m.ReplayAll()
 
     with Outbox('username', 'password', 'server', 1234) as o:
-        o.send(message, [Attachment('foo', raw='foo')])
+        o.send(message, [Attachment('foo', fileobj=StringIO('foo'))])
 
     m.VerifyAll()
     m.UnsetStubs()
