@@ -13,7 +13,7 @@ if sys.argv[-1] == 'publish':
 
 settings = {
     'name': 'outbox',
-    'version': '0.1.1',
+    'version': '0.1.2',
     'description': 'SMTP client for Humans.',
     'long_description': open('README.rst').read(),
     'author': 'Nathan Hoad',
