@@ -39,26 +39,15 @@ class Email(object):
 class Attachment(object):
     '''Attachment for an email'''
 
-    def __init__(self, name, filepath=None, raw=None):
-        if filepath and raw:
-            raise ValueError("filepath and raw can't both be set.")
-
-        if not filepath and raw is None:
-            raise ValueError("one of filepath or raw must be set.")
-
-        if filepath and not os.path.isfile(filepath):
-            raise OSError("File does not exist: %s" % filepath)
-
+    def __init__(self, name, fileobj):
         self.name = name
-        self.filepath = filepath
-        self.raw = raw
+        self.raw = fileobj.read()
+
+        if not isinstance(self.raw, bytes):
+            self.raw = fileobj.encode()
 
     def read(self):
-        if self.raw:
-            return self.raw
-
-        with open(self.filepath) as f:
-            return f.read()
+        return self.raw
 
 class Outbox(object):
     '''Thin wrapper around smtplib.(SMTP|SMTP_SSL)'''
@@ -135,7 +124,7 @@ def add_attachment(message, attachment):
         message: MIMEMultipart instance.
         attachment: Attachment instance.
     '''
-    data = attachment.read().encode('ascii')
+    data = attachment.read()
 
     part = MIMEBase('application', 'octet-stream')
     part.set_payload(data)
