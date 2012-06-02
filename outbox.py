@@ -44,7 +44,7 @@ class Attachment(object):
         self.raw = fileobj.read()
 
         if not isinstance(self.raw, bytes):
-            self.raw = fileobj.encode()
+            self.raw = self.raw.encode()
 
     def read(self):
         return self.raw
