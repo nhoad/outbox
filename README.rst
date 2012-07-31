@@ -54,6 +54,9 @@ Installing Outbox.py is simple::
 Change History
 --------------
 
+0.1.3 (3rd July 2012)
+    - Made a few lines of code a bit easier to follow. No functional changes.
+    - Updated the license to actually hold copyright in my name, instead of Kenneth Reitz. Does this mean he owned copyright on the library up until now? Can I even change the license? I'm unsure.
 0.1.2 (2nd June 2012)
     - Made Outbox a context manager, so it can be used with the `with` statement.
       As noted in the example, this has the added benefit of performing a single login to send all emails, you should get better performance using a with statement.
