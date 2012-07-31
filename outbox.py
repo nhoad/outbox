@@ -4,7 +4,6 @@ Author: Nathan Hoad
 Description: Simple wrapper around smtplib for sending an email.
 '''
 
-import os
 import smtplib
 import sys
 
@@ -14,6 +13,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
 
+# python 3 doesn't have the basestring anymore. How rude.
 string_type = basestring if sys.version_info[0] == 2 else str
 
 class Email(object):
@@ -76,9 +76,11 @@ class Outbox(object):
         server, port, mode = self.connection_details
 
         if mode == 'SSL':
-            smtp = smtplib.SMTP_SSL(server, port)
+            smtp_class = smtplib.SMTP_SSL
         else:
-            smtp = smtplib.SMTP(server, port)
+            smtp_class = smtplib.SMTP
+
+        smtp = smtp_class(server, port)
 
         if mode == 'TLS':
             smtp.starttls()
