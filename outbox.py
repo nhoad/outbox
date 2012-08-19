@@ -102,7 +102,7 @@ class Outbox(object):
         msg['Subject'] = email.subject
 
         if email.body:
-            msg.attach(MIMEText(email.body, 'plain'))
+            msg.attach(MIMEText(email.body, 'plain', 'utf8'))
 
         if email.html_body:
             msg.attach(MIMEText(email.html_body, 'html'))
