@@ -23,6 +23,9 @@ class Email(object):
 
         iter(recipients)
 
+        if isinstance(recipients, string_type):
+            recipients = [recipients]
+
         for r in recipients:
             if not isinstance(r, string_type):
                 raise TypeError("Recipient not a string: %s" % r)

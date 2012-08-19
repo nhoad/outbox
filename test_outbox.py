@@ -57,6 +57,13 @@ def test_email():
     assert e.subject == 'subject'
     assert e.recipients == ['nathan@getoffmalawn.com']
 
+def test_single_recipient_becomes_list():
+    e = Email(recipients='nathan@getoffmalawn.com', subject='subject',
+            body='body')
+
+    assert isinstance(e.recipients, list)
+    assert e.recipients == ['nathan@getoffmalawn.com']
+    assert e.recipients != 'nathan@getoffmalawn.com'
 
 def test_outbox_attributes():
     o = Outbox('username', 'password', 'server', 1234)
