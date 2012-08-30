@@ -73,7 +73,7 @@ class Attachment(object):
         return self.raw
 
 class Outbox(object):
-    '''Thin wrapper around smtplib.(SMTP|SMTP_SSL)'''
+    '''Thin wrapper around the SMTP and SMTP_SSL classes from the smtplib module.'''
 
     def __init__(self, username, password, server, port, mode='TLS'):
         if mode not in ('SSL', 'TLS', None):
