@@ -120,7 +120,7 @@ class Outbox(object):
         '''
 
         msg = email.as_mime(attachments)
-        msg['From'] = self.username
+        msg['From'] = self.sender_address()
 
         if self._conn:
             self._conn.sendmail(self.username, email.recipients, msg.as_string())
@@ -128,6 +128,17 @@ class Outbox(object):
             smtp = self._login()
             smtp.sendmail(self.username, email.recipients, msg.as_string())
             smtp.quit()
+
+    def sender_address(self):
+        '''Return the sender address.
+
+        The default implementation is to use the username that is used for signing
+        in.
+
+        If you want pretty names, e.g. <Captain Awesome> foo@example.com,
+        override this method to do what you want.
+        '''
+        return self.username
 
 def add_attachment(message, attachment):
     '''Attach an attachment to a message as a side effect.
