@@ -56,6 +56,9 @@ Change History
 
 0.1.4
     - Handle passing a single recipient as a string, instead of forcing the recipient to be a list.
+    - Handle utf8 email properly. Thanks, Zhang Mingyuan!
+      I doubt I've covered every use case, so the charset to use can be passed in when constructing an Email.
+    - Added a sender_address method to the Outbox class, for when the username used for authentication isn't good enough.
 0.1.3 (3rd July 2012)
     - Made a few lines of code a bit easier to follow. No functional changes.
     - Updated the license to actually hold copyright in my name, instead of Kenneth Reitz. Does this mean he owned copyright on the library up until now? Can I even change the license? I'm unsure.
