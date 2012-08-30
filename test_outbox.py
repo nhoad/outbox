@@ -6,6 +6,28 @@ from outbox import Outbox, Attachment, Email
 
 from StringIO import StringIO
 
+class replace(object):
+    def __init__(self, orig, new):
+        self.orig = orig
+        self.parent = orig.im_class
+        self.orig_name = orig.im_func.__name__
+        self.new = new
+
+    def __enter__(self):
+        setattr(self.parent, self.orig_name, self.new)
+
+    def __exit__(self, type, value, traceback):
+        setattr(self.parent, self.orig_name, self.orig)
+
+def test_encoding():
+    body = u'すすめ商品を見るに'
+    body = u'Российская Федерация'
+    message = Email(['nathan@getoffmalawn.com'], 'subject', body)
+
+    text = message.as_mime().as_string()
+
+    assert 'w5DCoMOQwr7DkcKBw5HCgcOQwrjDkMK5w5HCgcOQwrrDkMKww5HCjyDDkMKkw5DCtcOQwrTDkMK1\nw5HCgMOQwrDDkcKGw5DCuMORwo8=' in text, u"The encoded form of '%s' is incorrect!" % body
+
 def test_attachment_raw_data():
     attachment = Attachment('my filename', fileobj=StringIO('this is some data'))
 
@@ -106,25 +128,24 @@ def test_outbox_send():
 
     import smtplib, email.mime.multipart
 
-    email.mime.multipart.MIMEMultipart.as_string = lambda self: 'foo'
-    smtplib.SMTP = m.CreateMockAnything()
-    smtp = m.CreateMockAnything()
+    with replace(email.mime.multipart.MIMEMultipart.as_string, lambda self: 'foo'):
+        smtplib.SMTP = m.CreateMockAnything()
+        smtp = m.CreateMockAnything()
 
-    smtplib.SMTP('server',1234).AndReturn(smtp)
+        smtplib.SMTP('server', 1234).AndReturn(smtp)
 
-    smtp.starttls()
-    smtp.login('username', 'password')
-    smtp.sendmail('username', message.recipients, 'foo')
-    smtp.quit()
+        smtp.starttls()
+        smtp.login('username', 'password')
+        smtp.sendmail('username', message.recipients, 'foo')
+        smtp.quit()
 
-    m.ReplayAll()
+        m.ReplayAll()
 
-    o = Outbox('username', 'password', 'server', 1234)
-    o.send(message, [Attachment('foo', fileobj=StringIO('foo'))])
+        o = Outbox('username', 'password', 'server', 1234)
+        o.send(message, [Attachment('foo', fileobj=StringIO('foo'))])
 
-    m.VerifyAll()
-    m.UnsetStubs()
-
+        m.VerifyAll()
+        m.UnsetStubs()
 
 def test_outbox_context():
     m = mox.Mox()
@@ -132,21 +153,21 @@ def test_outbox_context():
 
     import smtplib, email.mime.multipart
 
-    email.mime.multipart.MIMEMultipart.as_string = lambda self: 'foo'
-    smtplib.SMTP = m.CreateMockAnything()
-    smtp = m.CreateMockAnything()
+    with replace(email.mime.multipart.MIMEMultipart.as_string, lambda self: 'foo'):
+        smtplib.SMTP = m.CreateMockAnything()
+        smtp = m.CreateMockAnything()
 
-    smtplib.SMTP('server',1234).AndReturn(smtp)
+        smtplib.SMTP('server', 1234).AndReturn(smtp)
 
-    smtp.starttls()
-    smtp.login('username', 'password')
-    smtp.sendmail('username', message.recipients, 'foo')
-    smtp.quit()
+        smtp.starttls()
+        smtp.login('username', 'password')
+        smtp.sendmail('username', message.recipients, 'foo')
+        smtp.quit()
 
-    m.ReplayAll()
+        m.ReplayAll()
 
-    with Outbox('username', 'password', 'server', 1234) as o:
-        o.send(message, [Attachment('foo', fileobj=StringIO('foo'))])
+        with Outbox('username', 'password', 'server', 1234) as o:
+            o.send(message, [Attachment('foo', fileobj=StringIO('foo'))])
 
-    m.VerifyAll()
-    m.UnsetStubs()
+        m.VerifyAll()
+        m.UnsetStubs()

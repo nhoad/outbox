@@ -17,14 +17,14 @@ from email.utils import formatdate
 string_type = basestring if sys.version_info[0] == 2 else str
 
 class Email(object):
-    def __init__(self, recipients, subject, body=None, html_body=None):
-        if not recipients:
-            raise ValueError("At least one recipient must be specified!")
-
+    def __init__(self, recipients, subject, body=None, html_body=None, charset='utf8'):
         iter(recipients)
 
         if isinstance(recipients, string_type):
             recipients = [recipients]
+
+        if not recipients:
+            raise ValueError("At least one recipient must be specified!")
 
         for r in recipients:
             if not isinstance(r, string_type):
@@ -37,6 +37,26 @@ class Email(object):
         self.subject = subject
         self.body = body
         self.html_body = html_body
+        self.charset = charset
+
+    def as_mime(self, attachments=()):
+        msg = MIMEMultipart('alternative')
+        msg['To'] = ', '.join(self.recipients)
+        msg['Date'] = formatdate(localtime=True)
+        msg['Subject'] = self.subject
+
+        if self.body:
+            msg.attach(MIMEText(self.body, 'plain', self.charset))
+
+        if self.html_body:
+            msg.attach(MIMEText(self.html_body, 'html', self.charset))
+
+        for f in attachments:
+            if not isinstance(f, Attachment):
+                raise TypeError("attachment must be of type Attachment")
+            add_attachment(msg, f)
+
+        return msg
 
 
 class Attachment(object):
@@ -72,7 +92,7 @@ class Outbox(object):
         self._conn.quit()
 
     def _login(self):
-        '''Login to the SMTP server specified at instantiation'
+        '''Login to the SMTP server specified at instantiation
 
         Returns an authenticated SMTP instance.
         '''
@@ -98,22 +118,9 @@ class Outbox(object):
             email: Email instance to send.
             attachments: iterable containing Attachment instances
         '''
-        msg = MIMEMultipart('alternative')
+
+        msg = email.as_mime(attachments)
         msg['From'] = self.username
-        msg['To'] = ', '.join(email.recipients)
-        msg['Date'] = formatdate(localtime=True)
-        msg['Subject'] = email.subject
-
-        if email.body:
-            msg.attach(MIMEText(email.body, 'plain', 'utf8'))
-
-        if email.html_body:
-            msg.attach(MIMEText(email.html_body, 'html'))
-
-        for f in attachments:
-            if not isinstance(f, Attachment):
-                raise TypeError("attachment must be of type Attachment")
-            add_attachment(msg, f)
 
         if self._conn:
             self._conn.sendmail(self.username, email.recipients, msg.as_string())
