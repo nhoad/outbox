@@ -17,7 +17,7 @@ from email.utils import formatdate
 string_type = basestring if sys.version_info[0] == 2 else str
 
 class Email(object):
-    def __init__(self, recipients, subject, body=None, html_body=None, charset='utf8'):
+    def __init__(self, recipients, subject, body=None, html_body=None, charset='utf8', fields=None):
         iter(recipients)
 
         if isinstance(recipients, string_type):
@@ -38,12 +38,20 @@ class Email(object):
         self.body = body
         self.html_body = html_body
         self.charset = charset
+        
+        if fields:
+            self.fields = fields
+        else:
+            self.fields = dict()
 
     def as_mime(self, attachments=()):
         msg = MIMEMultipart('alternative')
         msg['To'] = ', '.join(self.recipients)
         msg['Date'] = formatdate(localtime=True)
         msg['Subject'] = self.subject
+
+        for key, value in self.fields.iteritems():
+            msg[key] = value
 
         if self.body:
             msg.attach(MIMEText(self.body, 'plain', self.charset))
@@ -57,7 +65,6 @@ class Email(object):
             add_attachment(msg, f)
 
         return msg
-
 
 class Attachment(object):
     '''Attachment for an email'''
@@ -75,28 +82,28 @@ class Attachment(object):
 class Outbox(object):
     '''Thin wrapper around the SMTP and SMTP_SSL classes from the smtplib module.'''
 
-    def __init__(self, username, password, server, port, mode='TLS'):
+    def __init__(self, username, password, server, port, mode='TLS', debug=False):
         if mode not in ('SSL', 'TLS', None):
             raise ValueError("Mode must be one of TLS, SSL, or None")
 
         self.username = username
         self.password = password
-        self.connection_details = (server, port, mode)
+        self.connection_details = (server, port, mode, debug)
         self._conn = None
 
     def __enter__(self):
-        self._conn = self._login()
+        self.connect()
         return self
 
     def __exit__(self, type, value, traceback):
-        self._conn.quit()
+        self.disconnect()
 
     def _login(self):
         '''Login to the SMTP server specified at instantiation
 
         Returns an authenticated SMTP instance.
         '''
-        server, port, mode = self.connection_details
+        server, port, mode, debug = self.connection_details
 
         if mode == 'SSL':
             smtp_class = smtplib.SMTP_SSL
@@ -104,6 +111,7 @@ class Outbox(object):
             smtp_class = smtplib.SMTP
 
         smtp = smtp_class(server, port)
+        smtp.set_debuglevel(debug)
 
         if mode == 'TLS':
             smtp.starttls()
@@ -111,8 +119,14 @@ class Outbox(object):
         smtp.login(self.username, self.password)
         return smtp
 
+    def connect(self):
+        self._conn = self._login()
+
+    def disconnect(self):
+        self._conn.quit()
+
     def send(self, email, attachments=()):
-        '''Send an email.
+        '''Send an email. Connect/Disconnect if not already connected
 
         Arguments:
             email: Email instance to send.
@@ -120,14 +134,15 @@ class Outbox(object):
         '''
 
         msg = email.as_mime(attachments)
-        msg['From'] = self.sender_address()
+
+        if 'From' not in msg:
+            msg['From'] = self.sender_address()
 
         if self._conn:
             self._conn.sendmail(self.username, email.recipients, msg.as_string())
         else:
-            smtp = self._login()
-            smtp.sendmail(self.username, email.recipients, msg.as_string())
-            smtp.quit()
+            with self:
+                self._conn.sendmail(self.username, email.recipients, msg.as_string())
 
     def sender_address(self):
         '''Return the sender address.

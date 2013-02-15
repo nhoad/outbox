@@ -1,4 +1,5 @@
 #!/usr/bin/env python2
+# -*- coding: UTF-8 -*-
 
 import mox
 
@@ -73,11 +74,12 @@ def test_email_errors_bodies():
 
 def test_email():
     e = Email(recipients=['nathan@getoffmalawn.com'], subject='subject',
-            body='body')
+            body='body', fields={'Reply-To':'nobody@nowhere.com'})
 
     assert e.body == 'body'
     assert e.subject == 'subject'
     assert e.recipients == ['nathan@getoffmalawn.com']
+    assert e.fields == {'Reply-To':'nobody@nowhere.com'}
 
 def test_single_recipient_becomes_list():
     e = Email(recipients='nathan@getoffmalawn.com', subject='subject',
@@ -92,7 +94,7 @@ def test_outbox_attributes():
 
     assert o.username == 'username'
     assert o.password == 'password'
-    assert o.connection_details == ('server', 1234, 'TLS')
+    assert o.connection_details == ('server', 1234, 'TLS', False)
 
 def test_outbox_login():
     m = mox.Mox()
@@ -102,6 +104,7 @@ def test_outbox_login():
     smtplib.SMTP = m.CreateMockAnything()
     smtp = m.CreateMockAnything()
     smtplib.SMTP('server',1234).AndReturn(smtp)
+    smtp.set_debuglevel(False)
     smtp.starttls()
     smtp.login('username', 'password')
 
@@ -134,6 +137,7 @@ def test_outbox_send():
 
         smtplib.SMTP('server', 1234).AndReturn(smtp)
 
+        smtp.set_debuglevel(True)
         smtp.starttls()
         smtp.login('username', 'password')
         smtp.sendmail('username', message.recipients, 'foo')
@@ -141,7 +145,7 @@ def test_outbox_send():
 
         m.ReplayAll()
 
-        o = Outbox('username', 'password', 'server', 1234)
+        o = Outbox('username', 'password', 'server', 1234, debug=True)
         o.send(message, [Attachment('foo', fileobj=StringIO('foo'))])
 
         m.VerifyAll()
@@ -159,6 +163,7 @@ def test_outbox_context():
 
         smtplib.SMTP('server', 1234).AndReturn(smtp)
 
+        smtp.set_debuglevel(False)
         smtp.starttls()
         smtp.login('username', 'password')
         smtp.sendmail('username', message.recipients, 'foo')
@@ -171,3 +176,17 @@ def test_outbox_context():
 
         m.VerifyAll()
         m.UnsetStubs()
+
+if __name__ == '__main__':
+    #test_encoding()
+    test_attachment_raw_data()
+    test_attachment_file()
+    test_email_errors_recipients()
+    test_email_errors_bodies()
+    test_email()
+    test_single_recipient_becomes_list()
+    test_outbox_attributes()
+    test_outbox_login()
+    test_outbox_login_errors()
+    test_outbox_send()
+    test_outbox_context()
