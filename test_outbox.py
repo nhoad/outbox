@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 import mox
+import base64
 
 from outbox import Outbox, Attachment, Email
 
@@ -21,13 +22,10 @@ class replace(object):
         setattr(self.parent, self.orig_name, self.orig)
 
 def test_encoding():
-    body = u'すすめ商品を見るに'
-    body = u'Российская Федерация'
-    message = Email(['nathan@getoffmalawn.com'], 'subject', body)
-
-    text = message.as_mime().as_string()
-
-    assert 'w5DCoMOQwr7DkcKBw5HCgcOQwrjDkMK5w5HCgcOQwrrDkMKww5HCjyDDkMKkw5DCtcOQwrTDkMK1\nw5HCgMOQwrDDkcKGw5DCuMORwo8=' in text, u"The encoded form of '%s' is incorrect!" % body
+    for body in [u'すすめ商品を見るに', u'Российская Федерация']:
+        message = Email(['nathan@getoffmalawn.com'], 'subject', body)
+        text = message.as_mime().as_string()
+        assert base64.b64encode(body.encode('UTF-8')) in text, u"The encoded form of '%s' is incorrect!" % body
 
 def test_attachment_raw_data():
     attachment = Attachment('my filename', fileobj=StringIO('this is some data'))
@@ -178,7 +176,7 @@ def test_outbox_context():
         m.UnsetStubs()
 
 if __name__ == '__main__':
-    #test_encoding()
+    test_encoding()
     test_attachment_raw_data()
     test_attachment_file()
     test_email_errors_recipients()
@@ -190,3 +188,4 @@ if __name__ == '__main__':
     test_outbox_login_errors()
     test_outbox_send()
     test_outbox_context()
+    print "All tests passed"
