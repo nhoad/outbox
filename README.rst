@@ -54,6 +54,12 @@ Installing Outbox.py is simple::
 Change History
 --------------
 
+0.1.5
+    Thanks to Peter Naudus for the following contributions!
+    - Added debug argument to Outbox class, to switch smtplib's debugging.
+    - Added fields argument to Email class, to allow additional email fields to be set.
+    - Connection and disconnection are now exposed.
+    - Internal cleanup of some of the connection code.
 0.1.4
     - Handle passing a single recipient as a string, instead of forcing the recipient to be a list.
     - Handle utf8 email properly. Thanks, Zhang Mingyuan!

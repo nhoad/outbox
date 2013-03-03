@@ -5,7 +5,8 @@ Development Lead
 
 - Nathan Hoad <nathan@getoffmalawn.com>
 
-Patches and Suggestions
+Contributions
 =======================
 
 Zhang Mingyuan
+Peter Naudus
