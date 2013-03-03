@@ -17,7 +17,8 @@ from email.utils import formatdate
 string_type = basestring if sys.version_info[0] == 2 else str
 
 class Email(object):
-    def __init__(self, recipients, subject, body=None, html_body=None, charset='utf8', fields=None):
+    def __init__(self, recipients, subject, body=None, html_body=None,
+            charset='utf8', fields=None):
         iter(recipients)
 
         if isinstance(recipients, string_type):
@@ -38,7 +39,7 @@ class Email(object):
         self.body = body
         self.html_body = html_body
         self.charset = charset
-        
+
         if fields:
             self.fields = fields
         else:
@@ -139,16 +140,18 @@ class Outbox(object):
             msg['From'] = self.sender_address()
 
         if self._conn:
-            self._conn.sendmail(self.username, email.recipients, msg.as_string())
+            self._conn.sendmail(self.username, email.recipients,
+                    msg.as_string())
         else:
             with self:
-                self._conn.sendmail(self.username, email.recipients, msg.as_string())
+                self._conn.sendmail(self.username, email.recipients,
+                        msg.as_string())
 
     def sender_address(self):
         '''Return the sender address.
 
-        The default implementation is to use the username that is used for signing
-        in.
+        The default implementation is to use the username that is used for
+        signing in.
 
         If you want pretty names, e.g. <Captain Awesome> foo@example.com,
         override this method to do what you want.
@@ -167,6 +170,7 @@ def add_attachment(message, attachment):
     part = MIMEBase('application', 'octet-stream')
     part.set_payload(data)
     encoders.encode_base64(part)
-    part.add_header('Content-Disposition', 'attachment', filename=attachment.name)
+    part.add_header('Content-Disposition', 'attachment',
+            filename=attachment.name)
 
     message.attach(part)
