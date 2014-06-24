@@ -10,3 +10,4 @@ Contributions
 
 Zhang Mingyuan
 Peter Naudus
+Hideaki Takahashi
