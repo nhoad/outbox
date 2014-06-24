@@ -87,6 +87,7 @@ class Email(object):
 
         return msg
 
+
 class Attachment(object):
     '''Attachment for an email'''
 
@@ -99,6 +100,7 @@ class Attachment(object):
 
     def read(self):
         return self.raw
+
 
 class Outbox(object):
     '''Thin wrapper around the SMTP and SMTP_SSL classes from the smtplib module.'''
@@ -161,11 +163,11 @@ class Outbox(object):
 
         if self._conn:
             self._conn.sendmail(self.username, email.recipients,
-                    msg.as_string())
+                                msg.as_string())
         else:
             with self:
                 self._conn.sendmail(self.username, email.recipients,
-                        msg.as_string())
+                                    msg.as_string())
 
     def sender_address(self):
         '''Return the sender address.
@@ -177,6 +179,7 @@ class Outbox(object):
         override this method to do what you want.
         '''
         return self.username
+
 
 def add_attachment(message, attachment):
     '''Attach an attachment to a message as a side effect.
@@ -191,6 +194,6 @@ def add_attachment(message, attachment):
     part.set_payload(data)
     encoders.encode_base64(part)
     part.add_header('Content-Disposition', 'attachment',
-            filename=attachment.name)
+                    filename=attachment.name)
 
     message.attach(part)
