@@ -18,8 +18,8 @@ settings = {
     'long_description': open('README.rst').read(),
     'author': 'Nathan Hoad',
     'author_email': 'nathan@getoffmalawn.com',
-    'url': 'https://bitbucket.org/getoffmalawn/outbox.py',
-    'py_modules': ['outbox',],
+    'url': 'https://github.com/nathan-hoad/outbox',
+    'py_modules': ['outbox'],
     'license': 'BSD',
     'classifiers': (
         # 'Development Status :: 5 - Production/Stable',
