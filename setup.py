@@ -2,9 +2,9 @@ import os
 import sys
 
 try:
-    from setuptools import setup
-except ImportError:
     from distutils.core import setup
+except ImportError:
+    from setuptools import setup
 
 # Publish Helper.
 if sys.argv[-1] == 'publish':
