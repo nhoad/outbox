@@ -139,11 +139,16 @@ class Outbox(object):
         if mode == 'TLS':
             smtp.starttls()
 
-        smtp.login(self.username, self.password)
+        self.authenticate(smtp)
+
         return smtp
 
     def connect(self):
         self._conn = self._login()
+
+    def authenticate(self, smtp):
+        """Perform login with the given smtplib.SMTP instance."""
+        smtp.login(self.username, self.password)
 
     def disconnect(self):
         self._conn.quit()
@@ -179,6 +184,18 @@ class Outbox(object):
         override this method to do what you want.
         '''
         return self.username
+
+
+class AnonymousOutbox(Outbox):
+    """Outbox subclass suitable for SMTP servers that do not (or will not)
+    perform authentication.
+    """
+    def __init__(self, *args, **kwargs):
+        super(AnonymousOutbox, self).__init__('', '', *args, **kwargs)
+
+    def authenticate(self, smtp):
+        """Perform no authentication as the server does not require it."""
+        pass
 
 
 def add_attachment(message, attachment):
