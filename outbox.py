@@ -13,8 +13,16 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
 
-# python 3 doesn't have the basestring anymore. How rude.
-string_type = basestring if sys.version_info[0] == 2 else str
+
+PY2 = sys.version_info[0] == 2
+
+if PY2:
+    string_type = basestring
+    iteritems = lambda d: d.iteritems()
+else:
+    string_type = str
+    iteritems = lambda d: d.items()
+
 
 class Email(object):
     def __init__(self, recipients, subject, body=None, html_body=None,
@@ -39,11 +47,7 @@ class Email(object):
         self.body = body
         self.html_body = html_body
         self.charset = charset
-
-        if fields:
-            self.fields = fields
-        else:
-            self.fields = dict()
+        self.fields = fields or {}
 
     def as_mime(self, attachments=()):
         msg = MIMEMultipart('alternative')
@@ -51,7 +55,7 @@ class Email(object):
         msg['Date'] = formatdate(localtime=True)
         msg['Subject'] = self.subject
 
-        for key, value in self.fields.iteritems():
+        for key, value in iteritems(self.fields):
             msg[key] = value
 
         if self.body:
