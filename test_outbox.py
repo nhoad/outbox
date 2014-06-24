@@ -1,37 +1,34 @@
 #!/usr/bin/env python2
 # -*- coding: UTF-8 -*-
 
-import mox
 import base64
+
+try:
+    from unittest import mock
+except ImportError:
+    import mock
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 from outbox import Outbox, Attachment, Email
 
-from StringIO import StringIO
-
-class replace(object):
-    def __init__(self, orig, new):
-        self.orig = orig
-        self.parent = orig.im_class
-        self.orig_name = orig.im_func.__name__
-        self.new = new
-
-    def __enter__(self):
-        setattr(self.parent, self.orig_name, self.new)
-
-    def __exit__(self, type, value, traceback):
-        setattr(self.parent, self.orig_name, self.orig)
 
 def test_encoding():
     for body in [u'すすめ商品を見るに', u'Российская Федерация']:
         message = Email(['nathan@getoffmalawn.com'], 'subject', body)
         text = message.as_mime().as_string()
-        assert base64.b64encode(body.encode('UTF-8')) in text, u"The encoded form of '%s' is incorrect!" % body
+        assert base64.b64encode(body.encode('UTF-8')).decode('utf8') in text, u"The encoded form of '%s' is incorrect!" % body
+
 
 def test_attachment_raw_data():
     attachment = Attachment('my filename', fileobj=StringIO('this is some data'))
 
     assert attachment.name == 'my filename'
-    assert attachment.raw == 'this is some data'
+    assert attachment.raw == b'this is some data'
+
 
 def test_attachment_file():
     attachment = Attachment('my filename', fileobj=open(__file__, 'rb'))
@@ -43,8 +40,9 @@ def test_attachment_file():
     attachment = Attachment('my filename', fileobj=StringIO('foo data'))
 
     assert attachment.name == 'my filename'
-    assert attachment.raw == 'foo data'
-    assert attachment.read() == 'foo data'
+    assert attachment.raw == b'foo data'
+    assert attachment.read() == b'foo data'
+
 
 def test_email_errors_recipients():
     test_args = [
@@ -62,6 +60,7 @@ def test_email_errors_recipients():
         else:
             assert False, "No recipients should be stopped"
 
+
 def test_email_errors_bodies():
     try:
         Email(recipients=[''], subject='foo', body=None, html_body=None)
@@ -69,6 +68,7 @@ def test_email_errors_bodies():
         pass
     else:
         assert False, "You shouldn't be able to construct an email with no body"
+
 
 def test_email():
     e = Email(recipients=['nathan@getoffmalawn.com'], subject='subject',
@@ -79,13 +79,15 @@ def test_email():
     assert e.recipients == ['nathan@getoffmalawn.com']
     assert e.fields == {'Reply-To':'nobody@nowhere.com'}
 
+
 def test_single_recipient_becomes_list():
     e = Email(recipients='nathan@getoffmalawn.com', subject='subject',
-            body='body')
+              body='body')
 
     assert isinstance(e.recipients, list)
     assert e.recipients == ['nathan@getoffmalawn.com']
     assert e.recipients != 'nathan@getoffmalawn.com'
+
 
 def test_outbox_attributes():
     o = Outbox('username', 'password', 'server', 1234)
@@ -94,25 +96,19 @@ def test_outbox_attributes():
     assert o.password == 'password'
     assert o.connection_details == ('server', 1234, 'TLS', False)
 
+
 def test_outbox_login():
-    m = mox.Mox()
-
-    import smtplib
-
-    smtplib.SMTP = m.CreateMockAnything()
-    smtp = m.CreateMockAnything()
-    smtplib.SMTP('server',1234).AndReturn(smtp)
-    smtp.set_debuglevel(False)
-    smtp.starttls()
-    smtp.login('username', 'password')
-
-    m.ReplayAll()
-
     o = Outbox('username', 'password', 'server', 1234)
-    o._login()
 
-    m.VerifyAll()
-    m.UnsetStubs()
+    with mock.patch('smtplib.SMTP') as SMTP:
+        smtp = SMTP.return_value
+        o._login()
+
+    print(smtp.mock_calls)
+    smtp.set_debuglevel.assert_any_call(False)
+    smtp.starttls.assert_any_call()
+    smtp.login.assert_any_call('username', 'password')
+
 
 def test_outbox_login_errors():
     try:
@@ -124,56 +120,41 @@ def test_outbox_login_errors():
 
 
 def test_outbox_send():
-    m = mox.Mox()
     message = Email(['nathan@getoffmalawn.com'], 'subject', 'body')
+    o = Outbox('username', 'password', 'server', 1234, debug=True)
 
-    import smtplib, email.mime.multipart
+    import email.mime.multipart
 
-    with replace(email.mime.multipart.MIMEMultipart.as_string, lambda self: 'foo'):
-        smtplib.SMTP = m.CreateMockAnything()
-        smtp = m.CreateMockAnything()
-
-        smtplib.SMTP('server', 1234).AndReturn(smtp)
-
-        smtp.set_debuglevel(True)
-        smtp.starttls()
-        smtp.login('username', 'password')
-        smtp.sendmail('username', message.recipients, 'foo')
-        smtp.quit()
-
-        m.ReplayAll()
-
-        o = Outbox('username', 'password', 'server', 1234, debug=True)
-        o.send(message, [Attachment('foo', fileobj=StringIO('foo'))])
-
-        m.VerifyAll()
-        m.UnsetStubs()
-
-def test_outbox_context():
-    m = mox.Mox()
-    message = Email(['nathan@getoffmalawn.com'], 'subject', 'body')
-
-    import smtplib, email.mime.multipart
-
-    with replace(email.mime.multipart.MIMEMultipart.as_string, lambda self: 'foo'):
-        smtplib.SMTP = m.CreateMockAnything()
-        smtp = m.CreateMockAnything()
-
-        smtplib.SMTP('server', 1234).AndReturn(smtp)
-
-        smtp.set_debuglevel(False)
-        smtp.starttls()
-        smtp.login('username', 'password')
-        smtp.sendmail('username', message.recipients, 'foo')
-        smtp.quit()
-
-        m.ReplayAll()
-
-        with Outbox('username', 'password', 'server', 1234) as o:
+    with mock.patch.object(email.mime.multipart.MIMEMultipart, 'as_string', lambda self: 'foo'):
+        with mock.patch('smtplib.SMTP') as SMTP:
+            smtp = SMTP.return_value
             o.send(message, [Attachment('foo', fileobj=StringIO('foo'))])
 
-        m.VerifyAll()
-        m.UnsetStubs()
+    smtp.set_debuglevel.assert_any_call(True)
+    smtp.starttls.assert_any_call()
+    smtp.login.assert_any_call('username', 'password')
+    smtp.sendmail.assert_any_call('username', message.recipients, 'foo')
+    smtp.quit.assert_any_call()
+
+
+def test_outbox_context():
+    message = Email(['nathan@getoffmalawn.com'], 'subject', 'body')
+    outbox = Outbox('username', 'password', 'server', 1234)
+
+    import email.mime.multipart
+
+    with mock.patch.object(email.mime.multipart.MIMEMultipart, 'as_string', lambda self: 'foo'):
+        with mock.patch('smtplib.SMTP') as SMTP:
+            smtp = SMTP.return_value
+            with outbox as o:
+                o.send(message, [Attachment('foo', fileobj=StringIO('foo'))])
+
+    smtp.set_debuglevel.assert_any_call(False)
+    smtp.starttls.assert_any_call()
+    smtp.login.assert_any_call('username', 'password')
+    smtp.sendmail.assert_any_call('username', message.recipients, 'foo')
+    smtp.quit.assert_any_call()
+
 
 if __name__ == '__main__':
     test_encoding()
@@ -188,4 +169,4 @@ if __name__ == '__main__':
     test_outbox_login_errors()
     test_outbox_send()
     test_outbox_context()
-    print "All tests passed"
+    print("All tests passed")
