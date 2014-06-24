@@ -54,6 +54,11 @@ Installing Outbox.py is simple::
 Change History
 --------------
 
+0.1.6 (24th June 2014)
+    - Added `AnonymousOutbox`, a class for connecting to servers that don't perform authentication.
+    - Fleshed out documentation for `outbox.Email`.
+    - Fixed a bug when using Python 3 (calling iteritems on a dict).
+    - Moved the project to Github.
 0.1.5 (3rd March 2013)
     - Thanks to Peter Naudus for the following contributions!
     - Added debug argument to Outbox class, to switch smtplib's debugging.
