@@ -26,7 +26,23 @@ else:
 
 class Email(object):
     def __init__(self, recipients, subject, body=None, html_body=None,
-            charset='utf8', fields=None):
+                 charset='utf8', fields=None):
+        """
+        Object representation of an email. Contains a recipient, subject,
+        conditionally a body or HTML body.
+
+        Arguments:
+            recipients - list of strings of the email addresses of the
+                         recipients. May also be a string containing a single
+                         email address.
+            subject - Subject of the email.
+            body - Plain-text body.
+            html_body - Rich-text body.
+            charset - charset to use for encoding the `body` and `html_body`
+                      attributes.
+            fields - any additional headers you want to add to the email message.
+        """
+
         iter(recipients)
 
         if isinstance(recipients, string_type):
