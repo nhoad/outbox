@@ -1,5 +1,5 @@
 #!/usr/bin/env python2
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 
 import base64
 
@@ -72,12 +72,12 @@ def test_email_errors_bodies():
 
 def test_email():
     e = Email(recipients=['nathan@getoffmalawn.com'], subject='subject',
-            body='body', fields={'Reply-To':'nobody@nowhere.com'})
+              body='body', fields={'Reply-To': 'nobody@nowhere.com'})
 
     assert e.body == 'body'
     assert e.subject == 'subject'
     assert e.recipients == ['nathan@getoffmalawn.com']
-    assert e.fields == {'Reply-To':'nobody@nowhere.com'}
+    assert e.fields == {'Reply-To': 'nobody@nowhere.com'}
 
 
 def test_single_recipient_becomes_list():
