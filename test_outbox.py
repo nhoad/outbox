@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import base64
+from codecs import lookup
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 
@@ -100,7 +101,7 @@ def test_content_type():
             if cs is None:
                 assert p.get_charset() is None
             else:
-                assert p.get_charset().input_charset == cs
+                assert lookup(p.get_charset().input_charset) == lookup(cs)
 
     e = Email(recipients=['test@example.com'], subject='subject', body='body')
     t(e.as_mime(), alt, [(MIMEText, text, 'utf8')])
