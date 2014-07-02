@@ -66,7 +66,17 @@ class Email(object):
         self.fields = fields or {}
 
     def as_mime(self, attachments=()):
-        msg = MIMEMultipart('alternative')
+        if attachments:
+            msg = MIMEMultipart('mixed')
+            if self.body and self.html_body:
+                txt = MIMEMultipart('alternative')
+                msg.attach(txt)
+            else:
+                txt = msg
+        else:
+            msg = MIMEMultipart('alternative')
+            txt = msg
+
         msg['To'] = ', '.join(self.recipients)
         msg['Date'] = formatdate(localtime=True)
         msg['Subject'] = self.subject
@@ -75,10 +85,10 @@ class Email(object):
             msg[key] = value
 
         if self.body:
-            msg.attach(MIMEText(self.body, 'plain', self.charset))
+            txt.attach(MIMEText(self.body, 'plain', self.charset))
 
         if self.html_body:
-            msg.attach(MIMEText(self.html_body, 'html', self.charset))
+            txt.attach(MIMEText(self.html_body, 'html', self.charset))
 
         for f in attachments:
             if not isinstance(f, Attachment):
