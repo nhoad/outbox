@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import base64
+from email.header import decode_header
 
 try:
     from unittest import mock
@@ -42,6 +43,21 @@ def test_attachment_file():
     assert attachment.name == 'my filename'
     assert attachment.raw == b'foo data'
     assert attachment.read() == b'foo data'
+
+
+def test_rfc2231():
+    filename = u'ファイル名'
+    a = [Attachment(filename, fileobj=StringIO('this is some data'))]
+
+    e = Email(['test@example.com'], 'subject', 'body')
+    assert e.as_mime(a).get_payload()[1].get_filename() == filename
+
+    e = Email(['test@example.com'], 'subject', 'body', rfc2231=True)
+    assert e.as_mime(a).get_payload()[1].get_filename() == filename
+
+    e = Email(['test@example.com'], 'subject', 'body', rfc2231=False)
+    h, enc = decode_header(e.as_mime(a).get_payload()[1].get_filename())[0]
+    assert h.decode(enc) == filename
 
 
 def test_email_errors_recipients():
@@ -160,6 +176,7 @@ if __name__ == '__main__':
     test_encoding()
     test_attachment_raw_data()
     test_attachment_file()
+    test_rfc2231()
     test_email_errors_recipients()
     test_email_errors_bodies()
     test_email()
