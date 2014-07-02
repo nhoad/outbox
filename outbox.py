@@ -8,6 +8,7 @@ import smtplib
 import sys
 
 from email import encoders
+from email.header import Header
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -26,7 +27,7 @@ else:
 
 class Email(object):
     def __init__(self, recipients, subject, body=None, html_body=None,
-                 charset='utf8', fields=None):
+                 charset='utf8', fields=None, rfc2231=True):
         """
         Object representation of an email. Contains a recipient, subject,
         conditionally a body or HTML body.
@@ -64,6 +65,7 @@ class Email(object):
         self.html_body = html_body
         self.charset = charset
         self.fields = fields or {}
+        self.rfc2231 = rfc2231
 
     def as_mime(self, attachments=()):
         msg = MIMEMultipart('alternative')
@@ -83,7 +85,7 @@ class Email(object):
         for f in attachments:
             if not isinstance(f, Attachment):
                 raise TypeError("attachment must be of type Attachment")
-            add_attachment(msg, f)
+            add_attachment(msg, f, self.rfc2231)
 
         return msg
 
@@ -198,7 +200,7 @@ class AnonymousOutbox(Outbox):
         pass
 
 
-def add_attachment(message, attachment):
+def add_attachment(message, attachment, rfc2231=True):
     '''Attach an attachment to a message as a side effect.
 
     Arguments:
@@ -210,7 +212,8 @@ def add_attachment(message, attachment):
     part = MIMEBase('application', 'octet-stream')
     part.set_payload(data)
     encoders.encode_base64(part)
+    filename = attachment.name if rfc2231 else Header(attachment.name).encode()
     part.add_header('Content-Disposition', 'attachment',
-                    filename=attachment.name)
+                    filename=filename)
 
     message.attach(part)
