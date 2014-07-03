@@ -89,35 +89,40 @@ def test_content_type():
     text = 'text/plain'
     html = 'text/html'
     octstr = 'application/octet-stream'
-    attachments = [Attachment('my filename', fileobj=StringIO('this is some data'))]
+    attachments = [Attachment('filename', fileobj=StringIO('content'))]
 
-    def t(m, root_ct, expects_parts):
+    def t(m, root_ct, root_cs, expected_parts):
+        def cmpcs(actual, expected):
+            if expected is None:
+                assert actual is None
+            else:
+                assert lookup(actual.input_charset) == lookup(expected)
+
         assert m.get_content_type() == root_ct
+        cmpcs(m.get_charset(), root_cs)
         p = m.get_payload()
-        for p, e in zip(m.get_payload(), expects_parts):
+        for p, e in zip(m.get_payload(), expected_parts):
             typ, ct, cs = e
             assert isinstance(p, typ)
             assert p.get_content_type() == ct
-            if cs is None:
-                assert p.get_charset() is None
-            else:
-                assert lookup(p.get_charset().input_charset) == lookup(cs)
+            cmpcs(p.get_charset(), cs)
 
     e = Email(recipients=['test@example.com'], subject='subject', body='body')
-    t(e.as_mime(), alt, [(MIMEText, text, 'utf8')])
-    t(e.as_mime(attachments), mixed,
+    t(e.as_mime(), text, 'utf8', [])
+    t(e.as_mime(attachments), mixed, None,
       [(MIMEText, text, 'utf8'), (MIMEBase, octstr, None)])
 
     e = Email(recipients=['test@example.com'], subject='subject', html_body='body')
-    t(e.as_mime(), alt, [(MIMEText, html, 'utf8')])
-    t(e.as_mime(attachments), mixed,
+    t(e.as_mime(), html, 'utf8', [])
+    t(e.as_mime(attachments), mixed, None,
       [(MIMEText, html, 'utf8'), (MIMEBase, octstr, None)])
 
     e = Email(recipients=['test@example.com'], subject='subject', body='body', html_body='body')
-    t(e.as_mime(), alt, [(MIMEText, text, 'utf8'), (MIMEText, html, 'utf8')])
-    t(e.as_mime(attachments), mixed,
+    t(e.as_mime(), alt, None,
+      [(MIMEText, text, 'utf8'), (MIMEText, html, 'utf8')])
+    t(e.as_mime(attachments), mixed, None,
       [(MIMEBase, alt, None), (MIMEBase, octstr, None)])
-    t(e.as_mime(attachments).get_payload()[0], alt,
+    t(e.as_mime(attachments).get_payload()[0], alt, None,
       [(MIMEText, text, 'utf8'), (MIMEText, html, 'utf8')])
 
 
