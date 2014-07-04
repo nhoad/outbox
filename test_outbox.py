@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import base64
+from codecs import lookup
 from email.header import decode_header
+from email.mime.base import MIMEBase
+from email.mime.text import MIMEText
 
 try:
     from unittest import mock
@@ -96,6 +99,49 @@ def test_email():
     assert e.fields == {'Reply-To': 'nobody@nowhere.com'}
 
 
+def test_content_type():
+    alt = 'multipart/alternative'
+    mixed = 'multipart/mixed'
+    text = 'text/plain'
+    html = 'text/html'
+    octstr = 'application/octet-stream'
+    attachments = [Attachment('filename', fileobj=StringIO('content'))]
+
+    def t(m, root_ct, root_cs, expected_parts):
+        def cmpcs(actual, expected):
+            if expected is None:
+                assert actual is None
+            else:
+                assert lookup(actual.input_charset) == lookup(expected)
+
+        assert m.get_content_type() == root_ct
+        cmpcs(m.get_charset(), root_cs)
+        p = m.get_payload()
+        for p, e in zip(m.get_payload(), expected_parts):
+            typ, ct, cs = e
+            assert isinstance(p, typ)
+            assert p.get_content_type() == ct
+            cmpcs(p.get_charset(), cs)
+
+    e = Email(recipients=['test@example.com'], subject='subject', body='body')
+    t(e.as_mime(), text, 'utf8', [])
+    t(e.as_mime(attachments), mixed, None,
+      [(MIMEText, text, 'utf8'), (MIMEBase, octstr, None)])
+
+    e = Email(recipients=['test@example.com'], subject='subject', html_body='body')
+    t(e.as_mime(), html, 'utf8', [])
+    t(e.as_mime(attachments), mixed, None,
+      [(MIMEText, html, 'utf8'), (MIMEBase, octstr, None)])
+
+    e = Email(recipients=['test@example.com'], subject='subject', body='body', html_body='body')
+    t(e.as_mime(), alt, None,
+      [(MIMEText, text, 'utf8'), (MIMEText, html, 'utf8')])
+    t(e.as_mime(attachments), mixed, None,
+      [(MIMEBase, alt, None), (MIMEBase, octstr, None)])
+    t(e.as_mime(attachments).get_payload()[0], alt, None,
+      [(MIMEText, text, 'utf8'), (MIMEText, html, 'utf8')])
+
+
 def test_single_recipient_becomes_list():
     e = Email(recipients='nathan@getoffmalawn.com', subject='subject',
               body='body')
@@ -180,6 +226,7 @@ if __name__ == '__main__':
     test_email_errors_recipients()
     test_email_errors_bodies()
     test_email()
+    test_content_type()
     test_single_recipient_becomes_list()
     test_outbox_attributes()
     test_outbox_login()

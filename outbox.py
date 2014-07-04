@@ -68,19 +68,35 @@ class Email(object):
         self.rfc2231 = rfc2231
 
     def as_mime(self, attachments=()):
-        msg = MIMEMultipart('alternative')
+        bodies = []
+        if self.body:
+            bodies.append(MIMEText(self.body, 'plain', self.charset))
+
+        if self.html_body:
+            bodies.append(MIMEText(self.html_body, 'html', self.charset))
+
+        with_alternative = len(bodies) == 2
+        if with_alternative or attachments:
+            if with_alternative:
+                txt = MIMEMultipart('alternative')
+                if attachments:
+                    msg = MIMEMultipart('mixed')
+                    msg.attach(txt)
+                else:
+                    msg = txt
+            else:
+                msg = txt = MIMEMultipart('mixed')
+            for body in bodies:
+                txt.attach(body)
+        else:
+            msg = bodies[0]
+
         msg['To'] = ', '.join(self.recipients)
         msg['Date'] = formatdate(localtime=True)
         msg['Subject'] = self.subject
 
         for key, value in iteritems(self.fields):
             msg[key] = value
-
-        if self.body:
-            msg.attach(MIMEText(self.body, 'plain', self.charset))
-
-        if self.html_body:
-            msg.attach(MIMEText(self.html_body, 'html', self.charset))
 
         for f in attachments:
             if not isinstance(f, Attachment):
