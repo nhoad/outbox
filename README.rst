@@ -54,6 +54,10 @@ Installing Outbox.py is simple::
 Change History
 --------------
 
+0.1.8 (24th June 2014)
+    - Thanks to Hideaki Takahashi for teh following contributions!
+    - Added RFC2047 style encoding support.
+    - Much improved support for multipart messages.
 0.1.7 (24th June 2014)
     - Thanks to Hideaki Takahashi for submitting a MANIFEST, which allows `outbox` to be installed via pip again (broken in 0.1.6)
 0.1.6 (24th June 2014)
