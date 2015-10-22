@@ -7,10 +7,13 @@ Description: Simple wrapper around smtplib for sending an email.
 import smtplib
 import sys
 
+#import logging
+import os
 from email import encoders
 from email.header import Header
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
 from email.utils import formatdate
 
@@ -27,7 +30,7 @@ else:
 
 class Email(object):
     def __init__(self, recipients, subject, body=None, html_body=None,
-                 charset='utf8', fields=None, rfc2231=True):
+                 charset='utf8', fields=None, rfc2231=True, embedded=None):
         """
         Object representation of an email. Contains a recipient, subject,
         conditionally a body or HTML body.
@@ -66,6 +69,7 @@ class Email(object):
         self.charset = charset
         self.fields = fields or {}
         self.rfc2231 = rfc2231
+        self.embedded = embedded or []
 
     def as_mime(self, attachments=()):
         bodies = []
@@ -76,10 +80,11 @@ class Email(object):
             bodies.append(MIMEText(self.html_body, 'html', self.charset))
 
         with_alternative = len(bodies) == 2
-        if with_alternative or attachments:
+        have_embedded = len(self.embedded) > 0
+        if with_alternative or attachments or have_embedded:
             if with_alternative:
                 txt = MIMEMultipart('alternative')
-                if attachments:
+                if attachments or have_embedded:
                     msg = MIMEMultipart('mixed')
                     msg.attach(txt)
                 else:
@@ -102,6 +107,23 @@ class Email(object):
             if not isinstance(f, Attachment):
                 raise TypeError("attachment must be of type Attachment")
             add_attachment(msg, f, self.rfc2231)
+
+        #logging.info("## size images embedded --> %d" % len(self.embedded))
+        for img in self.embedded:
+            img_cid = img[0]
+            path = img[1]
+            #logging.info('## process path: %s' % path)
+            if os.path.exists(path):
+                file = open(path, 'rb')
+                part = MIMEImage(file.read())
+                file.close()
+                part.add_header('Content-ID', '<%s>' % img_cid)
+
+                #logging.info("## file was embedding --> %s" % img_cid)
+                #logging.info("## size files embedded --> \n%s" % part.as_string())
+                msg.attach(part)
+            #else:
+                #logging.info('## file doesn\'t exist --> %s' % path)
 
         return msg
 
